@@ -1,60 +1,65 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Security.Claims;
+using System.Threading.Tasks;
 using FluentResults;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using UserApplication.Commands.Command;
+using UserApplication.Dtos.Request;
+using UserApplication.Services;
+using UserApplication.ViewModels;
 
 namespace UserApi.Controllers
 {
     [ApiVersion("1")]
     [ApiController]
     [Route("/api/v{version:apiVersion}/user")]
+    [Authorize(Roles="User")]
     public class UserController : Controller
     {
-        private readonly IMediator _mediator;
+        private readonly IUserService _userService;
 
-        public UserController(IMediator mediator)
+        public UserController(IUserService userService)
         {
-            _mediator = mediator;
+            _userService = userService;
         }
 
-        /// <summary>
-        ///     Creates an user
-        /// </summary>
-        /// <remarks>
-        ///     Sample request:
-        ///     POST /api/v1/user/
-        ///     {
-        ///     "uuid": "{userUuid}",
-        ///     "username": "{username]",
-        ///     "email": "{email}"
-        ///     }
-        /// </remarks>
-        /// <returns></returns>
-        [HttpPost]
-        public async Task<IActionResult> Create([FromForm] string uuid,
-            [FromForm] string username,
-            [FromForm] string email)
+        [HttpGet]
+        [Authorize("user:self_read")]
+        public async Task<IActionResult> Retrieve()
         {
-            Result result = await _mediator.Send(new CreateUserCommand
-            {
-                Uuid = uuid,
+            if (HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value == null) return Unauthorized();
 
-                Username = username,
+            Result<UserViewModel> result =
+                await _userService.RetrieveByUuidAsync(HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            
+            if (result.IsFailed && result.Errors.Exists(e => e.HasMetadata("errCode", "errUserNotFound")))
+                return NotFound("The user is not found");
 
-                Email = email
-            });
+            return Ok(result.ValueOrDefault);
+        }
 
-            if (result.IsFailed && result.Errors.Exists(e => e.HasMetadata("errCode", "errUserAlreadyExists")))
-                return BadRequest("The user already exists");
+        [Authorize("user:self_update")]
+        [HttpPost]
+        public async Task<IActionResult> Complete([FromForm] string countryUuid)
+        {
+                        
+            if (HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value == null) return Unauthorized();
 
+            Result result = await _userService.CompleteProfileAsync(
+                new CompleteUserProfileDto(HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "",
+                    Guid.Parse(countryUuid)));
+
+            if (result.IsFailed && result.Errors.Exists(e => e.HasMetadata("errCode", "errUserNotFound")))
+                return NotFound("The user is not found");
+            
+            if (result.IsFailed && result.Errors.Exists(e => e.HasMetadata("errCode", "errCountryNotFound")))
+                return NotFound("The country is not found");
+            
             if (result.IsFailed || result.Errors.Exists(e => e.HasMetadata("errCode", "errDbSaveFail")))
                 return Problem("An error occured while trying to save user into the database");
-
-            if (result.IsFailed)
-                return BadRequest(result.Errors);
-
-            return Created($"/api/v1/user/{uuid}", "");
+            
+            return Ok();
         }
 
         /// <summary>
@@ -66,10 +71,22 @@ namespace UserApi.Controllers
         /// </summary>
         /// <param name="deleteUserCommand"></param>
         /// <returns></returns>
+        [Authorize("user:self_delete")]
         [HttpDelete]
-        public async Task Delete([FromBody] DeleteUserCommand deleteUserCommand)
+        public async Task<IActionResult> Delete()
         {
-            await _mediator.Send(deleteUserCommand);
+            
+            if (HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value == null) return Unauthorized();
+
+            Result result = await _userService.DeleteAsync(new DeleteUserDto(HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? ""));
+
+            if (result.IsFailed && result.Errors.Exists(e => e.HasMetadata("errCode", "errUserNotFound")))
+                return NotFound("The user is not found");
+            
+            if (result.IsFailed || result.Errors.Exists(e => e.HasMetadata("errCode", "errDbSaveFail")))
+                return Problem("An error occured while trying to save user into the database");
+            
+            return Ok();
         }
     }
 }
