@@ -1,0 +1,8 @@
+.idea/
+
+UserApi/bin
+UserApi/obj
+UserApi/appsettings.Development.json
+
+UserApplication/bin
+UserApplication/obj
