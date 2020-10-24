@@ -7,8 +7,6 @@ WORKDIR /src
 
 ARG nuget_pat
 
-COPY UserDomain UserDomain
-COPY UserInfrastructure UserInfrastructure
 COPY UserApplication UserApplication
 COPY UserApi UserApi
 
