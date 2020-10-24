@@ -1,20 +1,27 @@
 ﻿using System;
+using System.Collections.Generic;
 using BuildingBlock.DataAccess;
 
 namespace UserApplication.Models
 {
     public class Country : Entity
     {
-        public Country(Guid uuid,
-            string code)
+        protected Country()
+        {
+            
+        }
+        
+        public Country(Guid uuid)
         {
             Uuid = uuid;
-
-            Code = code;
         }
 
         public Guid Uuid { get; }
+        
+        #region User relationship
+        
+        public List<User> Users { get; }
 
-        public string Code { get; }
+        #endregion
     }
 }
