@@ -1,8 +1,0 @@
-{
-  "runtimeOptions": {
-    "additionalProbingPaths": [
-      "C:\\Users\\Kaktus\\.dotnet\\store\\|arch|\\|tfm|",
-      "C:\\Users\\Kaktus\\.nuget\\packages"
-    ]
-  }
-}
