@@ -1,32 +1,44 @@
 ﻿using System;
 using System.Threading.Tasks;
 using BuildingBlock.DataAccess.Abstractions;
+using Microsoft.EntityFrameworkCore;
 using UserApplication.Models;
 
 namespace UserApplication.EntityFrameworkDataAccess.Repositories
 {
     public class CountryRepository : ICountryRepository
     {
-        public IUnitOfWork UnitOfWork { get; }
+        private readonly UserContext _context;
+
+        private readonly DbSet<Country> _countries;
+
+        public CountryRepository(UserContext context)
+        {
+            _context = context;
+
+            _countries = _context.Set<Country>();
+        }
+        
+        public IUnitOfWork UnitOfWork => _context;
 
         public void Add(Country country)
         {
-            throw new NotImplementedException();
+            _countries.Add(country);
         }
 
         public void Remove(Country country)
         {
-            throw new NotImplementedException();
+            _countries.Remove(country);
         }
 
         public Task<Country> FindByUuidAsync(Guid uuid)
         {
-            throw new NotImplementedException();
+            return _countries.FirstOrDefaultAsync(e => e.Uuid == uuid);
         }
 
         public Task<bool> ExistsByUuidAsync(Guid uuid)
         {
-            throw new NotImplementedException();
+            return _countries.AnyAsync(e => e.Uuid == uuid);
         }
     }
 }

@@ -4,7 +4,6 @@ using BuildingBlock.DataAccess.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using UserApplication.EntityFrameworkDataAccess.Configurations;
 using UserApplication.Models;
-using User = UserDomain.AggregateModels.Users.User;
 
 namespace UserApplication.EntityFrameworkDataAccess
 {
@@ -20,9 +19,9 @@ namespace UserApplication.EntityFrameworkDataAccess
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(modelBuilder);
-
             modelBuilder.ApplyConfiguration(new UserEntityTypeConfiguration());
+
+            modelBuilder.ApplyConfiguration(new CountryEntityTypeConfiguration());
         }
 
         public async Task<bool> SaveEntitiesAsync(CancellationToken cancellationToken = default)
