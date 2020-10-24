@@ -21,14 +21,17 @@ namespace UserApplication.IntegrationEvents.Handlers.Country
             _logger = logger;
         }
 
-        public async Task Handle(CountryCreatedIntegrationEvent @event)
+        public async Task<bool> Handle(CountryCreatedIntegrationEvent @event)
         {
             // Check if the country already exists
-            if (await _countryRepository.ExistsByUuidAsync(@event.CountryUuid)) return;
+            if (await _countryRepository.ExistsByUuidAsync(@event.CountryUuid))
+            {
+                return true;
+            }
 
             // Add the country
             _countryRepository.Add(
-                new Models.Country(@event.CountryUuid, @event.CountryCode));
+                new Models.Country(@event.CountryUuid));
 
             try
             {
@@ -36,17 +39,25 @@ namespace UserApplication.IntegrationEvents.Handlers.Country
                 var result = await _countryRepository.UnitOfWork.SaveEntitiesAsync();
 
                 if (!result)
+                {
                     _logger.LogInformation(
                         $"[CountryCreatedIntegrationEvent] End: An error happened while trying to add the country {@event.CountryUuid} in the database");
 
-                _logger.LogTrace("[CountryCreatedIntegrationEvent] Integration event processed successfully.");
+                    return false;
+                }
             }
             catch (DbUpdateException e)
             {
                 _logger.LogError(
                     $"[CountryCreatedIntegrationEvent] Error: An error happened while trying to add the country {@event.CountryUuid} in the database",
                     e);
+                
+                return false;
             }
+            
+            _logger.LogTrace("[CountryCreatedIntegrationEvent] Integration event processed successfully.");
+
+            return true;
         }
     }
 }

@@ -13,15 +13,23 @@ namespace UserApplication.IntegrationEvents.Handlers.Country
 
         private readonly ILogger<CountryDeletedIntegrationEventHandler> _logger;
 
-        public CountryDeletedIntegrationEventHandler(ICountryRepository countryRepository)
+        public CountryDeletedIntegrationEventHandler(ICountryRepository countryRepository,
+            ILogger<CountryDeletedIntegrationEventHandler> logger)
         {
             _countryRepository = countryRepository;
+
+            _logger = logger;
         }
 
-        public async Task Handle(CountryDeletedIntegrationEvent @event)
+        public async Task<bool> Handle(CountryDeletedIntegrationEvent @event)
         {
+            _logger.LogTrace("[CountryDeletedIntegrationEvent] Starting processing the integration event.");
+            
             // Check if the country exists
-            if (!await _countryRepository.ExistsByUuidAsync(@event.CountryUuid)) return;
+            if (!await _countryRepository.ExistsByUuidAsync(@event.CountryUuid))
+            {
+                return true;
+            }
 
             // Retrieve the country by it's uuid
             var country = await _countryRepository.FindByUuidAsync(@event.CountryUuid);
@@ -36,11 +44,23 @@ namespace UserApplication.IntegrationEvents.Handlers.Country
 
                 if (!result)
                 {
+                    _logger.LogInformation(
+                        $"[CountryDeletedIntegrationEvent] Error: An error happened while trying to remove the country {@event.CountryUuid} in the database");
+
+                    return false;
                 }
             }
             catch (DbUpdateException e)
             {
+                _logger.LogError(
+                    $"[CountryDeletedIntegrationEvent] Error: An error happened while trying to remove the country {@event.CountryUuid} in the database", e);
+
+                return false;
             }
+            
+            _logger.LogTrace("[CountryDeletedIntegrationEvent] Integration event processed successfully.");
+
+            return true;
         }
     }
 }

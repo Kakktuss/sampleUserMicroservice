@@ -5,6 +5,6 @@ namespace UserApplication.IntegrationEvents.Events.Country
 {
     public class CountryDeletedIntegrationEvent : IntegrationEvent
     {
-        public Guid CountryUuid { get; }
+        public Guid CountryUuid { get; set; }
     }
 }

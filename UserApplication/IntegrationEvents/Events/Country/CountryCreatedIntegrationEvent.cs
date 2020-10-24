@@ -5,8 +5,6 @@ namespace UserApplication.IntegrationEvents.Events.Country
 {
     public class CountryCreatedIntegrationEvent : IntegrationEvent
     {
-        public Guid CountryUuid { get; }
-
-        public string CountryCode { get; }
+        public Guid CountryUuid { get; set; }
     }
 }
